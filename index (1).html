@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forex Trading Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-lock"></i> MT5 Login</h2>
+                <span class="close" id="closeLogin">&times;</span>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Account Number</label>
+                    <input type="number" id="account" placeholder="Enter account number" value="100564040" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-key"></i> Password</label>
+                    <input type="password" id="password" placeholder="Enter password" value="7m_uNdPt" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-server"></i> Server</label>
+                    <input type="text" id="server" placeholder="Enter server" value="MetaQuotes-Demo" required>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Connect to MT5
+                </button>
+            </form>
+            <div id="loginStatus" class="status-message"></div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1><i class="fas fa-chart-line"></i> Forex Trading Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <div class="account-info">
+                    <span class="account-label">Account:</span>
+                    <span id="accountDisplay" class="account-value">-</span>
+                </div>
+                <div class="balance-info">
+                    <span class="balance-label">Balance:</span>
+                    <span id="balanceDisplay" class="balance-value">$0.00</span>
+                </div>
+                <button id="logoutBtn" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Market Data Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-candlestick"></i> Market Data</h3>
+                        <div class="card-actions">
+                            <select id="symbolSelect" class="select-input">
+                                <option value="EURUSD">EURUSD</option>
+                                <option value="GBPUSD">GBPUSD</option>
+                                <option value="USDJPY">USDJPY</option>
+                            </select>
+                            <select id="timeframeSelect" class="select-input">
+                                <option value="M15">M15</option>
+                                <option value="M30">M30</option>
+                                <option value="H1">H1</option>
+                                <option value="H4">H4</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="price-display">
+                            <div class="price-item">
+                                <span class="price-label">Bid</span>
+                                <span id="bidPrice" class="price-value">-</span>
+                            </div>
+                            <div class="price-item">
+                                <span class="price-label">Ask</span>
+                                <span id="askPrice" class="price-value">-</span>
+                            </div>
+                            <div class="price-item">
+                                <span class="price-label">Spread</span>
+                                <span id="spread" class="price-value">-</span>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                        <div class="data-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Open</th>
+                                        <th>High</th>
+                                        <th>Low</th>
+                                        <th>Close</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dataTableBody">
+                                    <!-- Data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strategy Signals Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-brain"></i> Strategy Signals</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="info-text"><i class="fas fa-info-circle"></i> Click on a strategy to activate auto-trading. It will monitor and execute trades automatically when signals are detected.</p>
+                        <div class="signals-grid">
+                            <div class="signal-card clickable" id="smcSignal" data-strategy="SMC">
+                                <div class="signal-header">
+                                    <i class="fas fa-chart-area"></i>
+                                    <span>SMC Strategy</span>
+                                    <span class="monitoring-badge" id="smcMonitoring" style="display: none;">
+                                        <i class="fas fa-circle-notch fa-spin"></i> Monitoring
+                                    </span>
+                                </div>
+                                <div class="signal-status" id="smcStatus">Click to Activate</div>
+                                <div class="signal-details" id="smcDetails">
+                                    <div>BOS: <span id="smcBos">-</span></div>
+                                    <div>Order Block: <span id="smcOb">-</span></div>
+                                    <div>FVG: <span id="smcFvg">-</span></div>
+                                </div>
+                            </div>
+                            <div class="signal-card clickable" id="ictSignal" data-strategy="ICT">
+                                <div class="signal-header">
+                                    <i class="fas fa-bolt"></i>
+                                    <span>ICT Strategy</span>
+                                    <span class="monitoring-badge" id="ictMonitoring" style="display: none;">
+                                        <i class="fas fa-circle-notch fa-spin"></i> Monitoring
+                                    </span>
+                                </div>
+                                <div class="signal-status" id="ictStatus">Click to Activate</div>
+                                <div class="signal-details" id="ictDetails">
+                                    <div>Liquidity Sweep: <span id="ictLs">-</span></div>
+                                    <div>Killzone: <span id="ictKz">-</span></div>
+                                </div>
+                            </div>
+                            <div class="signal-card clickable" id="customSignal" data-strategy="CUSTOM">
+                                <div class="signal-header">
+                                    <i class="fas fa-cog"></i>
+                                    <span>Custom Strategy</span>
+                                    <span class="monitoring-badge" id="customMonitoring" style="display: none;">
+                                        <i class="fas fa-circle-notch fa-spin"></i> Monitoring
+                                    </span>
+                                </div>
+                                <div class="signal-status" id="customStatus">Click to Activate</div>
+                                <div class="signal-details" id="customDetails">
+                                    <div>Signal: <span id="customSig">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+                <!-- Trading Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-cog"></i> Trading Settings</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Volume (Lots)</label>
+                            <input type="number" id="volume" step="0.01" min="0.01" value="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Stop Loss (optional)</label>
+                            <input type="number" id="stopLoss" step="0.0001" placeholder="0.0000">
+                        </div>
+                        <div class="form-group">
+                            <label>Take Profit (optional)</label>
+                            <input type="number" id="takeProfit" step="0.0001" placeholder="0.0000">
+                        </div>
+                        <div class="risk-info">
+                            <div class="risk-item">
+                                <span>Risk per Trade:</span>
+                                <span id="riskAmount">1%</span>
+                            </div>
+                            <div class="risk-item">
+                                <span>Max Trades/Day:</span>
+                                <span id="maxTrades">3</span>
+                            </div>
+                        </div>
+                        <div class="active-strategies">
+                            <label>Active Strategies:</label>
+                            <div id="activeStrategiesList" class="active-strategies-list">
+                                <span class="no-active">No strategies active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Trades -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-list"></i> Active Trades</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="activeTrades" class="trades-list">
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <p>No active trades</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Statistics -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-pie"></i> Statistics</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-label">Trades Today</div>
+                                <div class="stat-value" id="tradesToday">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Win Rate</div>
+                                <div class="stat-value" id="winRate">0%</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Profit/Loss</div>
+                                <div class="stat-value" id="profitLoss">$0.00</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Equity</div>
+                                <div class="stat-value" id="equity">$0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notificationToast" class="notification-toast">
+        <div class="toast-content">
+            <i class="toast-icon"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
